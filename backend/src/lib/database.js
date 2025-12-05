@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
+import {ENV} from "./env.js";
 
 export const connectDatabase = async () => {
     try {
-        const { MONGO_URI } = process.env;
+        const { MONGO_URI } = ENV;
         if (!MONGO_URI) {
             throw new Error("MongoDB URI is required");
         }
