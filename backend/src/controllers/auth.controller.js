@@ -3,6 +3,7 @@ import {generateToken} from "../lib/utils.js";
 import {sendWelcomeEmail} from "../emails/emailHandlers.js";
 import {ENV} from "../lib/env.js";
 import User from "../models/user.model.js";
+import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
     const { fullName, email, password } = req.body;
@@ -148,4 +149,62 @@ export const logout = async (_, res) => {
         success: true,
         message: 'Logout successfully'
     })
+}
+
+export const updateProfile = async (req, res) => {
+    try {
+        const { profilePicture } = req.body;
+        if (!profilePicture) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field'
+            })
+        }
+
+        const userId = req.user._id;
+
+        const uploadResponse = await cloudinary.uploader.upload(profilePicture);
+        if (!uploadResponse) {
+            return res.status(400).json({
+                success: false,
+                message: 'Upload error'
+            })
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(userId, { profilePicture: uploadResponse.secure_url }, { new: true });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Updated user',
+            data: updatedUser
+        })
+    } catch (e) {
+        console.error("Error updating profile", e);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        })
+    }
+}
+
+export const isAuthenticated = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Not Authenticated'
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Authenticated successfully',
+            data: req.user
+        })
+    } catch (e) {
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        })
+    }
 }
