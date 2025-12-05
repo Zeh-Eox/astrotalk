@@ -1,8 +1,8 @@
-import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import {generateToken} from "../lib/utils.js";
 import {sendWelcomeEmail} from "../emails/emailHandlers.js";
 import {ENV} from "../lib/env.js";
+import User from "../models/user.model.js";
 
 export const signup = async (req, res) => {
     const { fullName, email, password } = req.body;
@@ -38,7 +38,7 @@ export const signup = async (req, res) => {
         if (user) {
             return res.status(400).json({
                 success: false,
-                message: 'User already exists'
+                message: 'UserModel already exists'
             })
         }
 
@@ -63,7 +63,7 @@ export const signup = async (req, res) => {
 
             return res.status(201).json({
                 success: true,
-                message: 'User saved successfully',
+                message: 'UserModel saved successfully',
                 data: {
                     id: newUser._id,
                     email: newUser.email,
@@ -74,7 +74,7 @@ export const signup = async (req, res) => {
         } else {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid User data'
+                message: 'Invalid UserModel data'
             })
         }
     } catch (e) {
@@ -95,9 +95,57 @@ export const signup = async (req, res) => {
 }
 
 export const login = async (req, res) => {
+    const { email, password } = req.body;
 
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'Missing required field'
+        })
+    }
+
+    try {
+        const user = await User.findOne({ email })
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Credentials'
+            })
+        }
+
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
+        if (!isPasswordCorrect) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Credentials'
+            })
+        }
+
+        generateToken(user._id, res);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Login successfully',
+            data: {
+                _id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                profilePicture: user.profilePicture
+            }
+        })
+    } catch (e) {
+        console.error("Error logging user", e);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        })
+    }
 }
 
-export const logout = async (req, res) => {
-
+export const logout = async (_, res) => {
+    res.cookie('jwt', '', {maxAge: 0});
+    return res.status(200).json({
+        success: true,
+        message: 'Logout successfully'
+    })
 }
