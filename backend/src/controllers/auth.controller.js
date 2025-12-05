@@ -1,20 +1,22 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import {generateToken} from "../lib/utils.js";
+import {sendWelcomeEmail} from "../emails/emailHandlers.js";
+import "dotenv/config"
 
 export const signup = async (req, res) => {
     const { fullName, email, password } = req.body;
 
     try {
         if (!fullName || !email || !password) {
-            res.status(400).json({
+            return res.status(400).json({
                 success: false,
                 message: 'Missing required field'
             })
         }
 
         if (password.length < 8) {
-            res.status(400).json({
+            return res.status(400).json({
                 success: false,
                 message: 'Password must be at least 8 characters'
             })
@@ -23,7 +25,7 @@ export const signup = async (req, res) => {
         const emailRegex = /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
         if (!emailRegex.test(email)) {
-            res.status(400).json({
+            return res.status(400).json({
                 success: false,
                 message: 'Invalid email address'
             })
@@ -34,7 +36,7 @@ export const signup = async (req, res) => {
         })
 
         if (user) {
-            res.status(400).json({
+            return res.status(400).json({
                 success: false,
                 message: 'User already exists'
             })
@@ -50,10 +52,16 @@ export const signup = async (req, res) => {
         })
 
         if (newUser) {
-            generateToken(newUser._id, res);
-            await newUser.save()
+            const savedUser = await newUser.save();
+            generateToken(savedUser._id, res)
 
-            res.status(201).json({
+            try {
+                await sendWelcomeEmail(savedUser.email, savedUser.fullName, process.env.CLIENT_URL)
+            } catch (e) {
+                console.error("Failed to send email email", e)
+            }
+
+            return res.status(201).json({
                 success: true,
                 message: 'User saved successfully',
                 data: {
@@ -64,14 +72,22 @@ export const signup = async (req, res) => {
                 }
             })
         } else {
-            res.status(400).json({
+            return res.status(400).json({
                 success: false,
-                message: 'Invalid User datas'
+                message: 'Invalid User data'
             })
         }
     } catch (e) {
         console.error("Error creating user", e);
-        res.status(500).json({
+
+        if (e?.code === 11000 && (e.keyPattern?.email || e.keyValue?.email)){
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email address'
+            })
+        }
+
+        return res.status(500).json({
             success: false,
             message: 'Internal Server Error'
         })

@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json()); // req.body access in controllers
 
-app.use('/api/auth', authRoutes);
-app.use('/api/messages', messagesRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/messages', messagesRoutes);
 
 if(process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")))
