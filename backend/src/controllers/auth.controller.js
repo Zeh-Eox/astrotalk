@@ -171,7 +171,7 @@ export const updateProfile = async (req, res) => {
             })
         }
 
-        const updatedUser = await User.findByIdAndUpdate(userId, { profilePicture: uploadResponse.secure_url }, { new: true });
+        const updatedUser = await User.findByIdAndUpdate(userId, { profilePicture: uploadResponse.secure_url }, { new: true }).select("-password");
 
         return res.status(200).json({
             success: true,
