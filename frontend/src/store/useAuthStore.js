@@ -11,7 +11,7 @@ export const useAuthStore = create((set, get) => ({
   checkAuth: async () => {
     try {
       const response = await HTTP_CLIENT.get("/auth/check");
-      set({authUser: response.data});
+      set({authUser: response.data.data});
     } catch (error) {
       console.error("Error in authCheck: ", error);
       set({authUser: null});
@@ -24,7 +24,7 @@ export const useAuthStore = create((set, get) => ({
     set({isSigningUp: true})
     try {
       const response = await HTTP_CLIENT.post("/auth/signup", data);
-      set({authUser: response.data});
+      set({authUser: response.data.data});
 
       toast.success("Account created successfully")
     } catch (error) {
@@ -38,7 +38,7 @@ export const useAuthStore = create((set, get) => ({
     set({isLoggingIn: true})
     try {
       const response = await HTTP_CLIENT.post("/auth/login", data);
-      set({authUser: response.data});
+      set({authUser: response.data.data});
 
       toast.success("Logged in successfully")
     } catch (error) {
@@ -55,6 +55,18 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Logged out successfully")
     } catch (error) {
       toast.error(error.response.data.message)
+    }
+  },
+
+  updateProfile: async (data) => {
+    const toastId = toast.loading("Updating profile...");
+    try {
+      const res = await HTTP_CLIENT.put("/auth/update-profile", data);
+      set({ authUser: res.data.data });
+      toast.success("Profile updated successfully", {id: toastId});
+    } catch (error) {
+      console.log("Error in update profile:", error);
+      toast.error(error.response.data.message);
     }
   }
 }))
