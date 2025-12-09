@@ -26,7 +26,7 @@ const ChatsList = () => {
             <div className={`avatar online`}>
               <div className="size-12 rounded-full">
                 <img
-                  src={chat.profilePic || "/avatar.png"}
+                  src={chat.profilePicture || "/avatar.png"}
                   alt={chat.fullName}
                 />
               </div>
