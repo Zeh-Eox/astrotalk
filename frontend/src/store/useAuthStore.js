@@ -28,7 +28,7 @@ export const useAuthStore = create((set, get) => ({
 
       toast.success("Account created successfully")
     } catch (error) {
-      toast.error(error.response.data.message)
+      toast.error(error?.response?.data?.message)
     } finally {
       set({isSigningUp: false})
     }
@@ -42,7 +42,7 @@ export const useAuthStore = create((set, get) => ({
 
       toast.success("Logged in successfully")
     } catch (error) {
-      toast.error(error.response.data.message)
+      toast.error(error?.response?.data?.message)
     } finally {
       set({isLoggingIn: false})
     }
@@ -54,7 +54,7 @@ export const useAuthStore = create((set, get) => ({
       set({authUser: null});
       toast.success("Logged out successfully")
     } catch (error) {
-      toast.error(error.response.data.message)
+      toast.error(error?.response?.data?.message)
     }
   },
 
@@ -66,7 +66,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Profile updated successfully", {id: toastId});
     } catch (error) {
       console.log("Error in update profile:", error);
-      toast.error(error.response.data.message);
+      toast.error(error?.response?.data?.message);
     }
   }
 }))
