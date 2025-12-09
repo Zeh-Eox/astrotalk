@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  font-family: "Poppins";
+}
+
 @property --border-angle {
   inherits: false;
   initial-value: 0deg;
