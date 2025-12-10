@@ -1,7 +1,5 @@
 <h1 align="center">✨ Full-Stack Chat App with Auth & Emails ✨</h1>
 
-![Demo App](/frontend/public/screenshot-for-readme.png)
-
 Highlights:
 
 - 🔐 Custom JWT Authentication (no 3rd-party auth)
