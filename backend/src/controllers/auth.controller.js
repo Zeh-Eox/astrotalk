@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import {generateToken} from "../lib/utils.js";
-import {sendWelcomeEmail} from "../emails/emailHandlers.js";
-import {ENV} from "../lib/env.js";
+// import {sendWelcomeEmail} from "../emails/emailHandlers.js";
+// import {ENV} from "../lib/env.js";
 import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
 
@@ -56,11 +56,11 @@ export const signup = async (req, res) => {
             const savedUser = await newUser.save();
             generateToken(savedUser._id, res)
 
-            try {
-                await sendWelcomeEmail(savedUser.email, savedUser.fullName, ENV.CLIENT_URL)
-            } catch (e) {
-                console.error("Failed to send email email", e)
-            }
+            // try {
+            //     await sendWelcomeEmail(savedUser.email, savedUser.fullName, ENV.CLIENT_URL)
+            // } catch (e) {
+            //     console.error("Failed to send email email", e)
+            // }
 
             return res.status(201).json({
                 success: true,
