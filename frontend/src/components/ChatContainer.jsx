@@ -6,16 +6,30 @@ import NoChatHistoryPlaceholder from "./NoChatHistoryPlaceholder";
 import MessageInput from "./MessageInput";
 import MessagesLoadingSkeleton from "./MessagesLoadingSkeleton";
 
-const ChatContainer = () => {
-  const { selectedUser, getMessageByUserId, messages, isMessagesLoading } =
-    useChatStore();
+function ChatContainer() {
+  const {
+    selectedUser,
+    getMessagesByUserId,
+    messages,
+    isMessagesLoading,
+    subscribeToMessages,
+    unsubscribeFromMessages,
+  } = useChatStore();
   const { authUser } = useAuthStore();
-
   const messageEndRef = useRef(null);
 
   useEffect(() => {
-    getMessageByUserId(selectedUser._id);
-  }, [selectedUser, getMessageByUserId]);
+    getMessagesByUserId(selectedUser._id);
+    subscribeToMessages();
+
+    // clean up
+    return () => unsubscribeFromMessages();
+  }, [
+    selectedUser,
+    getMessagesByUserId,
+    subscribeToMessages,
+    unsubscribeFromMessages,
+  ]);
 
   useEffect(() => {
     if (messageEndRef.current) {
@@ -26,14 +40,13 @@ const ChatContainer = () => {
   return (
     <>
       <ChatHeader />
-
       <div className="flex-1 px-6 overflow-y-auto py-8">
         {messages.length > 0 && !isMessagesLoading ? (
           <div className="max-w-3xl mx-auto space-y-6">
             {messages.map((msg) => (
               <div
                 key={msg._id}
-                className={`chats ${
+                className={`chat ${
                   msg.senderId === authUser._id ? "chat-end" : "chat-start"
                 }`}
               >
@@ -61,7 +74,7 @@ const ChatContainer = () => {
                 </div>
               </div>
             ))}
-
+            {/* 👇 scroll target */}
             <div ref={messageEndRef} />
           </div>
         ) : isMessagesLoading ? (
@@ -74,6 +87,6 @@ const ChatContainer = () => {
       <MessageInput />
     </>
   );
-};
+}
 
 export default ChatContainer;
