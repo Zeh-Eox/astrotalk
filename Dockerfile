@@ -9,6 +9,8 @@ COPY frontend ./frontend
 RUN npm install --prefix backend \
   && npm install --prefix frontend
 
+RUN npm run build --prefix backend
+
 RUN npm run build --prefix frontend
 
 ENV NODE_ENV=production
