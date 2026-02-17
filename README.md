@@ -16,7 +16,7 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
@@ -31,37 +31,37 @@
 
 ---
 
-## ✨ Features
+## Features
 
 ### Authentication & Security
 
-- 🔐 Custom JWT-based authentication system
-- 🚦 API rate limiting with Arcjet
-- 🔒 Secure password hashing and validation
-- 🛡️ Protected routes and middleware
+- Custom JWT-based authentication system
+- API rate limiting with Arcjet
+- Secure password hashing and validation
+- Protected routes and middleware
 
 ### Real-Time Communication
 
-- ⚡ Instant messaging via Socket.io
-- 🟢 Online/offline user presence indicators
-- 🔔 Audio notifications for messages (toggleable)
+- Instant messaging via Socket.io
+- Online/offline user presence indicators
+- Audio notifications for messages (toggleable)
 
 ### User Experience
 
-- 📨 Automated welcome emails via Resend
-- 🖼️ Image upload and sharing (Cloudinary integration)
-- 🎨 Modern UI with Tailwind CSS and DaisyUI
-- 🧠 Efficient state management with Zustand
+- Automated welcome emails via Resend
+- Image upload and sharing (Cloudinary integration)
+- Modern UI with Tailwind CSS and DaisyUI
+- Efficient state management with Zustand
 
 ### Development
 
-- 🧰 RESTful API architecture
-- 🗂️ MongoDB for scalable data persistence
-- 🧑‍💻 Professional Git workflow (branches, PRs, code reviews)
+- RESTful API architecture
+- MongoDB for scalable data persistence
+- Professional Git workflow (branches, PRs, code reviews)
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 
@@ -85,7 +85,7 @@
 
 ---
 
-## 📦 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
@@ -102,7 +102,7 @@ You'll also need accounts and API keys for:
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### 1. Clone the Repository
 
@@ -127,7 +127,7 @@ npm install
 
 ---
 
-## 🔐 Environment Variables
+## Environment Variables
 
 ### Backend Configuration
 
@@ -173,7 +173,7 @@ VITE_API_URL=http://localhost:3000
 
 ---
 
-## 🏃 Running the Application
+## Running the Application
 
 ### Development Mode
 
@@ -207,7 +207,17 @@ The app will start on `http://localhost:3000`
 
 ---
 
-## 📁 Project Structure
+## Docker
+
+```bash
+docker run --rm -p 3000:3000 zeheox/astrotalk:latest
+```
+
+The app will start on `http://localhost:3000`
+
+---
+
+## Project Structure
 
 ```
 astrotalk/
@@ -237,7 +247,7 @@ astrotalk/
 
 ---
 
-## 📡 API Documentation
+## API Documentation
 
 ### User Endpoints
 
@@ -260,7 +270,7 @@ astrotalk/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please follow these steps:
 
@@ -279,13 +289,13 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Socket.io for real-time communication
 - Tailwind CSS and DaisyUI for the beautiful UI
@@ -295,7 +305,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📧 Contact
+## Contact
 
 For questions or support, please open an issue or contact:
 
