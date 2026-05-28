@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { memo, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore.js";
 import UserLoadingSkeleton from "./UserLoadingSkeleton.js";
 import NoChatsFound from "./NoChatsFound.js";
@@ -50,4 +50,4 @@ const ChatsList: React.FC = () => {
   );
 };
 
-export default ChatsList;
+export default memo(ChatsList);

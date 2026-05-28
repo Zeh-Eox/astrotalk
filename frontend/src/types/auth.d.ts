@@ -1,3 +1,6 @@
+import type { Socket } from "socket.io-client";
+import type { User } from "./index.js";
+
 export interface SignupData {
   fullName: string;
   email: string;

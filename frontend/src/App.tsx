@@ -1,18 +1,19 @@
-import React, { useEffect } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import ChatPage from "./pages/ChatPage.js";
-import LoginPage from "./pages/LoginPage.js";
-import SignUpPage from "./pages/SignUpPage.js";
 import { useAuthStore } from "./store/useAuthStore.js";
 import PageLoader from "./components/PageLoader.js";
 import { Toaster } from "react-hot-toast";
 
+const ChatPage = lazy(() => import("./pages/ChatPage.js"));
+const LoginPage = lazy(() => import("./pages/LoginPage.js"));
+const SignUpPage = lazy(() => import("./pages/SignUpPage.js"));
+
 const App: React.FC = () => {
-  const { isCheckingAuth, authUser } = useAuthStore();
+  const { isCheckingAuth, authUser, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    useAuthStore.getState().checkAuth();
-  }, []);
+    checkAuth();
+  }, [checkAuth]);
 
   if (isCheckingAuth) return <PageLoader />;
 
@@ -22,20 +23,22 @@ const App: React.FC = () => {
       <div className="absolute top-0 -left-4 size-96 bg-pink-500 opacity-20 blur-[100px]" />
       <div className="absolute bottom-0 -right-4 size-96 bg-cyan-500 opacity-20 blur-[100px]" />
 
-      <Routes>
-        <Route
-          path="/"
-          element={authUser ? <ChatPage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/login"
-          element={!authUser ? <LoginPage /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/signup"
-          element={!authUser ? <SignUpPage /> : <Navigate to="/" />}
-        />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route
+            path="/"
+            element={authUser ? <ChatPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/login"
+            element={!authUser ? <LoginPage /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/signup"
+            element={!authUser ? <SignUpPage /> : <Navigate to="/" />}
+          />
+        </Routes>
+      </Suspense>
 
       <Toaster />
     </div>

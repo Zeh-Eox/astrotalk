@@ -16,6 +16,9 @@ const userSchema = new Schema<UserDocument>(
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
     },
     password: {
       type: String,
@@ -24,14 +27,25 @@ const userSchema = new Schema<UserDocument>(
     fullName: {
       type: String,
       required: true,
-      minlength: 8,
+      trim: true,
+      minlength: 2,
+      maxlength: 80,
     },
     profilePicture: {
       type: String,
       default: "",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      transform: (_, ret) => {
+        delete ret.password;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  }
 );
 
 const UserModel = model<UserDocument>("User", userSchema);

@@ -12,10 +12,12 @@ export interface Message {
   text?: string;
   image?: string;
   createdAt: string;
+  isOptimistic?: boolean;
 }
 
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
+  nextCursor?: string | null;
 }

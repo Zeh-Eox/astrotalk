@@ -1,11 +1,30 @@
 services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
+    build: .
     image: zeheox/astrotalk:latest
     ports:
       - "3000:3000"
     restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
     environment:
       - NODE_ENV=production
       - PORT=3000
-    volumes:
-      - ./data:/app/data
+      - MONGO_URI=mongodb://mongo:27017/astrotalk
+
+volumes:
+  mongo_data:

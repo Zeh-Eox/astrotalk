@@ -20,9 +20,8 @@ const ChatContainer: React.FC = () => {
 
   const messageEndRef = useRef<HTMLDivElement | null>(null);
 
-  if (!selectedUser || !authUser) return null;
-
   useEffect(() => {
+    if (!selectedUser) return;
     getMessagesByUserId(selectedUser._id);
     subscribeToMessages();
 
@@ -30,7 +29,7 @@ const ChatContainer: React.FC = () => {
       unsubscribeFromMessages();
     };
   }, [
-    selectedUser._id,
+    selectedUser?._id,
     getMessagesByUserId,
     subscribeToMessages,
     unsubscribeFromMessages,
@@ -39,6 +38,8 @@ const ChatContainer: React.FC = () => {
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  if (!selectedUser || !authUser) return null;
 
   return (
     <>

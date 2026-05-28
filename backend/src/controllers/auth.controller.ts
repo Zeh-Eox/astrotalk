@@ -1,68 +1,35 @@
 import bcrypt from "bcryptjs";
-import {generateToken} from "../lib/utils.js";
 import type { Request, Response } from "express";
+import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
+import { sendWelcomeEmail } from "../emails/emailHandlers.js";
+import { ENV } from "../lib/env.js";
+import type {
+  SignupInput,
+  LoginInput,
+  UpdateProfileInput,
+} from "../schemas/auth.schema.js";
 
-interface SignupBody {
-  fullName: string;
-  email: string;
-  password: string;
-}
-
-interface LoginBody {
-  email: string;
-  password: string;
-}
-
-interface UpdateProfileBody {
-  profilePicture: string;
-}
+const BCRYPT_ROUNDS = 12;
 
 export const signup = async (
-  req: Request<{}, {}, SignupBody>,
+  req: Request<{}, {}, SignupInput>,
   res: Response
 ): Promise<void> => {
   const { fullName, email, password } = req.body;
 
   try {
-    if (!fullName || !email || !password) {
-      res.status(400).json({
-        success: false,
-        message: "Missing required field",
-      });
-      return;
-    }
-
-    if (password.length < 8) {
-      res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters",
-      });
-      return;
-    }
-
-    const emailRegex =
-      /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
-
-    if (!emailRegex.test(email)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid email address",
-      });
-      return;
-    }
-
     const userExists = await User.findOne({ email });
     if (userExists) {
-      res.status(400).json({
+      res.status(409).json({
         success: false,
         message: "User already exists",
       });
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     const newUser = await User.create({
       fullName,
@@ -72,68 +39,56 @@ export const signup = async (
 
     generateToken(newUser._id, res);
 
+    sendWelcomeEmail(newUser.email, newUser.fullName, ENV.CLIENT_URL).catch(
+      (err) => console.error("Welcome email failed:", err)
+    );
+
     res.status(201).json({
       success: true,
       message: "User created successfully",
       data: {
-        id: newUser._id,
+        _id: newUser._id,
         email: newUser.email,
         fullName: newUser.fullName,
         profilePicture: newUser.profilePicture,
       },
     });
-    return;
   } catch (e: any) {
-    console.error("Error creating user", e);
-
     if (e?.code === 11000) {
-      res.status(400).json({
+      res.status(409).json({
         success: false,
         message: "Email already exists",
       });
       return;
     }
 
+    console.error("Error creating user", e);
     res.status(500).json({
       success: false,
       message: "Internal Server Error",
     });
-    return;
   }
 };
 
-
 export const login = async (
-  req: Request<{}, {}, LoginBody>,
+  req: Request<{}, {}, LoginInput>,
   res: Response
 ): Promise<void> => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    res.status(400).json({
-      success: false,
-      message: "Missing required field",
-    });
-    return;
-  }
-
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(400).json({
+      res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
       return;
     }
 
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      user.password
-    );
-
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
-      res.status(400).json({
+      res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
@@ -152,42 +107,34 @@ export const login = async (
         profilePicture: user.profilePicture,
       },
     });
-    return;
   } catch (error) {
     console.error("Error logging user", error);
-
     res.status(500).json({
       success: false,
       message: "Internal Server Error",
     });
-    return;
   }
 };
 
 export const logout = async (_: Request, res: Response): Promise<void> => {
-    res.cookie('jwt', '', { maxAge: 0 });
+  res.cookie("jwt", "", {
+    maxAge: 0,
+    httpOnly: true,
+    sameSite: "strict",
+    secure: ENV.NODE_ENV === "production",
+  });
 
-    res.status(200).json({
-        success: true,
-        message: 'Logout successfully'
-    });
+  res.status(200).json({
+    success: true,
+    message: "Logout successfully",
+  });
 };
 
 export const updateProfile = async (
-  req: Request<{}, {}, UpdateProfileBody>,
+  req: Request<{}, {}, UpdateProfileInput>,
   res: Response
 ): Promise<void> => {
   try {
-    const { profilePicture } = req.body;
-
-    if (!profilePicture) {
-      res.status(400).json({
-        success: false,
-        message: "Missing required field",
-      });
-      return;
-    }
-
     if (!req.user) {
       res.status(401).json({
         success: false,
@@ -196,20 +143,19 @@ export const updateProfile = async (
       return;
     }
 
-    const userId = req.user._id;
+    const { profilePicture } = req.body;
 
-    const uploadResponse = await cloudinary.uploader.upload(profilePicture);
-
-    if (!uploadResponse) {
-      res.status(400).json({
-        success: false,
-        message: "Upload error",
-      });
-      return;
-    }
+    const uploadResponse = await cloudinary.uploader.upload(profilePicture, {
+      folder: "astrotalk/avatars",
+      resource_type: "image",
+      transformation: [
+        { width: 400, height: 400, crop: "fill", gravity: "face" },
+        { quality: "auto", fetch_format: "auto" },
+      ],
+    });
 
     const updatedUser = await User.findByIdAndUpdate(
-      userId,
+      req.user._id,
       { profilePicture: uploadResponse.secure_url },
       { new: true }
     ).select("-password");
@@ -221,7 +167,6 @@ export const updateProfile = async (
     });
   } catch (e) {
     console.error("Error updating profile", e);
-
     res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -233,24 +178,17 @@ export const isAuthenticated = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: "Not Authenticated",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Authenticated successfully",
-      data: req.user,
-    });
-  } catch (error) {
-    res.status(500).json({
+  if (!req.user) {
+    res.status(401).json({
       success: false,
-      message: "Internal Server Error",
+      message: "Not Authenticated",
     });
+    return;
   }
+
+  res.status(200).json({
+    success: true,
+    message: "Authenticated successfully",
+    data: req.user,
+  });
 };

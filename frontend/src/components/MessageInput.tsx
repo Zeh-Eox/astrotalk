@@ -24,14 +24,6 @@ const MessageInput: React.FC = () => {
 
   const { sendMessage, isSoundEnabled } = useChatStore();
 
-  useEffect(() => {
-    return () => {
-      if (imagePreview && imagePreview.startsWith("blob:")) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview]);
-
   const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
@@ -101,9 +93,6 @@ const MessageInput: React.FC = () => {
   };
 
   const removeImage = () => {
-    if (imagePreview && imagePreview.startsWith("blob:")) {
-      URL.revokeObjectURL(imagePreview);
-    }
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };

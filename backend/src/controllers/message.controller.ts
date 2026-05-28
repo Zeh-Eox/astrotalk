@@ -1,24 +1,24 @@
+import { Types } from "mongoose";
+import type { Request, Response } from "express";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
-import { Request, Response } from "express";
 
-interface SendMessageBody {
-  text?: string;
-  image?: string;
-}
+const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-interface GetMessagesParams {
-  id: string;
-}
-
-interface SearchQuery {
+interface ContactsQuery {
   search?: string;
+  limit?: number;
+}
+
+interface MessagesQuery {
+  before?: string;
+  limit?: number;
 }
 
 export const getAllContacts = async (
-  req: Request<{}, {}, {}, SearchQuery>,
+  req: Request<{}, {}, {}, ContactsQuery>,
   res: Response
 ): Promise<void> => {
   try {
@@ -28,18 +28,22 @@ export const getAllContacts = async (
     }
 
     const loggedUserId = req.user._id;
-    const { search } = req.query;
+    const { search, limit = 50 } = req.query;
 
-    const query: any = { _id: { $ne: loggedUserId } };
+    const query: Record<string, unknown> = { _id: { $ne: loggedUserId } };
 
     if (search) {
+      const safe = escapeRegex(search);
       query.$or = [
-        { fullName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
+        { fullName: { $regex: safe, $options: "i" } },
+        { email: { $regex: safe, $options: "i" } },
       ];
     }
 
-    const users = await User.find(query).select("-password");
+    const users = await User.find(query)
+      .select("-password")
+      .limit(limit)
+      .sort({ fullName: 1 });
 
     res.status(200).json({
       success: true,
@@ -47,6 +51,7 @@ export const getAllContacts = async (
       data: users,
     });
   } catch (error) {
+    console.error("getAllContacts", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
@@ -63,36 +68,59 @@ export const getChatPartners = async (
 
     const loggedUserId = req.user._id;
 
-    const messages = await Message.find({
-      $or: [{ senderId: loggedUserId }, { receiverId: loggedUserId }],
-    }).sort({ createdAt: -1 });
-
-    const partnerIds = [
-      ...new Set(
-        messages.map((m) =>
-          m.senderId.equals(loggedUserId)
-            ? m.receiverId.toString()
-            : m.senderId.toString()
-        )
-      ),
-    ];
-
-    const partners = await User.find({
-      _id: { $in: partnerIds },
-    }).select("-password");
+    const partners = await Message.aggregate([
+      {
+        $match: {
+          $or: [{ senderId: loggedUserId }, { receiverId: loggedUserId }],
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: {
+            $cond: [
+              { $eq: ["$senderId", loggedUserId] },
+              "$receiverId",
+              "$senderId",
+            ],
+          },
+          lastMessageAt: { $first: "$createdAt" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $project: {
+          _id: "$user._id",
+          fullName: "$user.fullName",
+          email: "$user.email",
+          profilePicture: "$user.profilePicture",
+          lastMessageAt: 1,
+        },
+      },
+      { $sort: { lastMessageAt: -1 } },
+    ]);
 
     res.status(200).json({
       success: true,
       message: "All chats successfully fetched",
       data: partners,
     });
-  } catch {
+  } catch (error) {
+    console.error("getChatPartners", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 
 export const getMessagesByUserId = async (
-  req: Request<GetMessagesParams>,
+  req: Request<{ id: string }, {}, {}, MessagesQuery>,
   res: Response
 ): Promise<void> => {
   try {
@@ -103,26 +131,45 @@ export const getMessagesByUserId = async (
 
     const myId = req.user._id;
     const { id } = req.params;
+    const { before, limit = 50 } = req.query;
 
-    const messages = await Message.find({
+    const filter: Record<string, unknown> = {
       $or: [
         { senderId: myId, receiverId: id },
         { senderId: id, receiverId: myId },
       ],
-    });
+    };
+
+    if (before) {
+      filter._id = { $lt: new Types.ObjectId(before) };
+    }
+
+    const docs = await Message.find(filter)
+      .sort({ _id: -1 })
+      .limit(limit)
+      .lean();
+
+    const messages = docs.reverse();
 
     res.status(200).json({
       success: true,
       message: "Messages found",
       data: messages,
+      nextCursor: docs.length === limit ? docs[0]?._id : null,
     });
-  } catch {
+  } catch (error) {
+    console.error("getMessagesByUserId", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 
+interface SendMessageBody {
+  text?: string;
+  image?: string;
+}
+
 export const sendMessage = async (
-  req: Request<GetMessagesParams, {}, SendMessageBody>,
+  req: Request<{ id: string }, {}, SendMessageBody>,
   res: Response
 ): Promise<void> => {
   try {
@@ -135,14 +182,6 @@ export const sendMessage = async (
     const senderId = req.user._id;
     const receiverId = req.params.id;
 
-    if (!text && !image) {
-      res.status(400).json({
-        success: false,
-        message: "Message must contain text or image",
-      });
-      return;
-    }
-
     if (senderId.equals(receiverId)) {
       res.status(400).json({
         success: false,
@@ -153,7 +192,7 @@ export const sendMessage = async (
 
     const receiverExists = await User.exists({ _id: receiverId });
     if (!receiverExists) {
-      res.status(400).json({
+      res.status(404).json({
         success: false,
         message: "Receiver does not exist",
       });
@@ -162,7 +201,11 @@ export const sendMessage = async (
 
     let imageUrl: string | undefined;
     if (image) {
-      const upload = await cloudinary.uploader.upload(image);
+      const upload = await cloudinary.uploader.upload(image, {
+        folder: "astrotalk/messages",
+        resource_type: "image",
+        transformation: [{ quality: "auto", fetch_format: "auto" }],
+      });
       imageUrl = upload.secure_url;
     }
 
@@ -185,7 +228,8 @@ export const sendMessage = async (
       message: "Message successfully sent",
       data: message,
     });
-  } catch {
+  } catch (error) {
+    console.error("sendMessage", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };

@@ -3,12 +3,12 @@ import { useAuthStore } from "../store/useAuthStore.js";
 import BorderAnimatedContainer from "../components/BorderAnimatedContainer.js";
 import {
   MessageCircleIcon,
-  LockIcon,
   MailIcon,
   UserIcon,
   LoaderIcon,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
+import PasswordInput from "../components/PasswordInput.js";
 
 type SignUpFormData = {
   fullName: string;
@@ -92,20 +92,18 @@ const SignUpPage: React.FC = () => {
                   {/* PASSWORD INPUT */}
                   <div>
                     <label className="auth-input-label">Password</label>
-                    <div className="relative">
-                      <LockIcon className="auth-input-icon" />
-
-                      <input
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
-                        className="input"
-                        placeholder="Enter your password"
-                        required
-                      />
-                    </div>
+                    <PasswordInput
+                      value={formData.password}
+                      onChange={(v) =>
+                        setFormData({ ...formData, password: v })
+                      }
+                      required
+                      autoComplete="new-password"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      At least 8 chars, including an uppercase, lowercase, and a
+                      digit.
+                    </p>
                   </div>
 
                   {/* SUBMIT BUTTON */}
@@ -115,7 +113,7 @@ const SignUpPage: React.FC = () => {
                     disabled={isSigningUp}
                   >
                     {isSigningUp ? (
-                      <LoaderIcon className="w-full h-5 animate-spin text-center" />
+                      <LoaderIcon className="w-5 h-5 animate-spin mx-auto" />
                     ) : (
                       "Create Account"
                     )}

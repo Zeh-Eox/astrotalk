@@ -1,17 +1,14 @@
 import { create } from "zustand";
 import { io, type Socket } from "socket.io-client";
-import {toast} from "react-hot-toast";
+import { toast } from "react-hot-toast";
 
 import { HTTP_CLIENT } from "../lib/axios.js";
+import { getErrorMessage } from "../lib/errors.js";
 import type { AuthStore } from "../types/auth.js";
-import type { User } from "../types/index.js";
-import type { ApiResponse } from "../types/index.js";
-import axios from "axios";
+import type { ApiResponse, User } from "../types/index.js";
 
 const BASE_URL =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:3000"
-    : "/";
+  import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   authUser: null,
@@ -27,14 +24,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const res = await HTTP_CLIENT.get<ApiResponse<User>>("/auth/check");
       set({ authUser: res.data.data });
       get().connectSocket();
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message);
-      } else {
-        toast.error("Unexpected error");
-      }
-    }
-    finally {
+    } catch {
+      set({ authUser: null });
+    } finally {
       set({ isCheckingAuth: false });
     }
   },
@@ -49,14 +41,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ authUser: res.data.data });
       toast.success("Account created successfully");
       get().connectSocket();
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message);
-      } else {
-        toast.error("Unexpected error");
-      }
-    }
-    finally {
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
       set({ isSigningUp: false });
     }
   },
@@ -71,14 +58,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ authUser: res.data.data });
       toast.success("Logged in successfully");
       get().connectSocket();
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message);
-      } else {
-        toast.error("Unexpected error");
-      }
-    }
-    finally {
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
       set({ isLoggingIn: false });
     }
   },
@@ -89,17 +71,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ authUser: null });
       toast.success("Logged out successfully");
       get().disconnectSocket();
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message);
-      } else {
-        toast.error("Unexpected error");
-      }
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   },
 
   updateProfile: async (data) => {
     const toastId = toast.loading("Updating profile...");
+    set({ isUpdatingProfile: true });
     try {
       const res = await HTTP_CLIENT.put<ApiResponse<User>>(
         "/auth/update-profile",
@@ -107,12 +86,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       );
       set({ authUser: res.data.data });
       toast.success("Profile updated successfully", { id: toastId });
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message);
-      } else {
-        toast.error("Unexpected error");
-      }
+    } catch (error) {
+      toast.error(getErrorMessage(error), { id: toastId });
+    } finally {
+      set({ isUpdatingProfile: false });
     }
   },
 
@@ -120,11 +97,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const { authUser, socket } = get();
     if (!authUser || socket?.connected) return;
 
-    const newSocket: Socket = io(BASE_URL, {
-      withCredentials: true,
-    });
-
-    newSocket.connect();
+    const newSocket: Socket = io(BASE_URL, { withCredentials: true });
 
     newSocket.on("getOnlineUsers", (userIds: string[]) => {
       set({ onlineUsers: userIds });

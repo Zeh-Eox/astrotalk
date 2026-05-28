@@ -1,19 +1,7 @@
-export interface ChatUser {
-  _id: string;
-  fullName: string;
-  email: string;
-  profilePicture?: string;
-}
+import type { Message, User } from "./index.js";
 
-export interface Message {
-  _id: string;
-  senderId: string;
-  receiverId: string;
-  text?: string;
-  image?: string;
-  createdAt: string;
-  isOptimistic?: boolean;
-}
+export type ChatUser = User;
+export type { Message };
 
 export interface SendMessagePayload {
   text?: string;
@@ -35,7 +23,7 @@ export interface ChatStore {
   setActiveTab: (tab: "chats" | "contacts") => void;
   setSelectedUser: (user: ChatUser | null) => void;
 
-  getAllContacts: () => Promise<void>;
+  getAllContacts: (search?: string) => Promise<void>;
   getMyChatPartners: () => Promise<void>;
   getMessagesByUserId: (userId: string) => Promise<void>;
   sendMessage: (payload: SendMessagePayload) => Promise<void>;

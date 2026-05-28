@@ -1,13 +1,9 @@
 import React, { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore.js";
 import BorderAnimatedContainer from "../components/BorderAnimatedContainer.js";
-import {
-  MessageCircleIcon,
-  LockIcon,
-  MailIcon,
-  LoaderIcon,
-} from "lucide-react";
-import { Link } from "react-router";
+import { MessageCircleIcon, MailIcon, LoaderIcon } from "lucide-react";
+import { Link } from "react-router-dom";
+import PasswordInput from "../components/PasswordInput.js";
 
 type LoginFormData = {
   email: string;
@@ -72,20 +68,14 @@ const LoginPage: React.FC = () => {
                   {/* PASSWORD INPUT */}
                   <div>
                     <label className="auth-input-label">Password</label>
-                    <div className="relative">
-                      <LockIcon className="auth-input-icon" />
-
-                      <input
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
-                        className="input"
-                        placeholder="Enter your password"
-                        required
-                      />
-                    </div>
+                    <PasswordInput
+                      value={formData.password}
+                      onChange={(v) =>
+                        setFormData({ ...formData, password: v })
+                      }
+                      required
+                      autoComplete="current-password"
+                    />
                   </div>
 
                   {/* SUBMIT BUTTON */}
@@ -95,7 +85,7 @@ const LoginPage: React.FC = () => {
                     disabled={isLoggingIn}
                   >
                     {isLoggingIn ? (
-                      <LoaderIcon className="w-full h-5 animate-spin text-center" />
+                      <LoaderIcon className="w-5 h-5 animate-spin mx-auto" />
                     ) : (
                       "Sign In"
                     )}

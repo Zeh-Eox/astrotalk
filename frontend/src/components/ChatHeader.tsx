@@ -7,10 +7,6 @@ const ChatHeader: React.FC = () => {
   const { selectedUser, setSelectedUser } = useChatStore();
   const { onlineUsers } = useAuthStore();
 
-  if (!selectedUser) return null;
-
-  const isOnline = onlineUsers.includes(selectedUser._id);
-
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -22,6 +18,10 @@ const ChatHeader: React.FC = () => {
 
     return () => window.removeEventListener("keydown", handleEscKey);
   }, [setSelectedUser]);
+
+  if (!selectedUser) return null;
+
+  const isOnline = onlineUsers.includes(selectedUser._id);
 
   return (
     <div className="flex justify-between items-center bg-slate-800/50 border-b border-slate-700/50 max-h-[84px] px-6 flex-1">
